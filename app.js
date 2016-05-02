@@ -10,7 +10,7 @@ var app = express()
 
 app.set('view engine', 'ejs')
 
-<!-- MUST BE BEFORE PASSPORT -->
+/* MUST BE BEFORE PASSPORT */
 app.use(bodyParser.urlencoded({extended: false }))
 app.use(cookieParser())
 app.use(expressSession({
@@ -22,9 +22,26 @@ app.use(expressSession({
 app.use(passport.initialize())
 app.use(passport.session())
 
+passport.use(new passportLocal.Strategy(function(username, password, done) {
+ if ( username === password) {
+   done(null, { id: username, name: username })
+ } else {
+   done(null, null)
+ }
+}))
+
+passport.serializeUser(function(user, done) {
+  done(null, user.id)
+})
+
+passport.deserializeUser(function(id, done) {
+  // query database or cache  here
+  done(null, { id: id, name: id })
+})
+
 app.get('/', function(req, res) {
   res.render('index', {
-    isAuthenticated: false,
+    isAuthenticated: req.isAuthenticated(),
     user: req.user
   })
 })
@@ -33,7 +50,9 @@ app.get('/login', function(req,res) {
   res.render('login')
 })
 
-app.post
+app.post('/login', passport.authenticate('local'), function(req, res) {
+  res.redirect('/')
+})
 
 var port = process.env.PORT || 1337
 
